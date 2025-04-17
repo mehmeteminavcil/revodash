@@ -4,11 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 
-export default async function UserProfile({
-  params: { id },
-}: {
-  params: { id: string };
-}) {
+export default async function UserProfile(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    id
+  } = params;
+
   const user = await prisma.user.findUnique({
     where: { telegramId: id },
     include: { rewards: true },
