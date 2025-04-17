@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  telegramId    String    @id @unique @map("telegram_id")
+  username      String?
+  firstName     String?
+  lastName      String?
+  isPremium     Boolean   @default(false)
+  languageCode  String?
+  referrerId    String?   @map("ref_by")
+  joinedAt      DateTime  @default(now())
+  lastMessageAt DateTime?
+  blockedBot    Boolean   @default(false)
+  messageCount  Int       @default(0)
+  status        String    @default("active")
+
+  referralCode  String    @unique @default(cuid()) // ✔ GEREKLİ!
+  referredCount Int       @default(0)
+  totalReward   Int       @default(0)
+  eventCount    Int       @default(0)
+  lastEventDate DateTime?
+
+  isWritingToAdmin Boolean @default(false) @map("is_writing_to_admin") // ✅ işte bu satır
+
+  rewards Reward[]
+  Message Message[]
+}
+
+model Reward {
+  id      String   @id @default(cuid())
+  userId  String
+  amount  Int
+  note    String?
+  givenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [telegramId])
+}
+
+model StartMessage {
+  id        Int      @id @default(1) // Sadece 1 kayıt olacak
+  message   String // Ana metin, %firstname% gibi değişkenler içerebilir
+  updatedAt DateTime @updatedAt
+  buttons   Button[] // İlişki
+
+  @@map("start_message")
+}
+
+model Button {
+  id           Int          @id @default(autoincrement())
+  text         String // Buton üzerindeki yazı
+  action       String // Hangi aksiyon tetiklenecek? (örn. "check_group")
+  url          String? // Buton url içerebilir (opsiyonel)
+  extraMessage String? // opsiyonel
+  row          Int          @default(0) // 💡 buton sırası (yan yana için)
+  startId      Int
+  start        StartMessage @relation(fields: [startId], references: [id], onDelete: Cascade)
+
+  @@map("button")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  userId    String
+  content   String
+  reply     String? // ✅ Admin cevabı
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false) // ✅ Yeni alan
+
+  user User @relation(fields: [userId], references: [telegramId], onDelete: Cascade)
+}
